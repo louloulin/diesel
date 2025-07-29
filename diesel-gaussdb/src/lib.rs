@@ -34,6 +34,7 @@
 
 pub mod backend;
 pub mod connection;
+pub mod metadata_lookup;
 pub mod query_builder;
 pub mod types;
 pub mod gaussdb_extensions;

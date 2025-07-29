@@ -30,25 +30,45 @@ impl From<(u32, u32)> for InnerGaussDBTypeMetadata {
     }
 }
 
-/// This error indicates that a type lookup for a custom
-/// GaussDB type failed
-#[derive(Clone, Debug, Hash, PartialEq, Eq)]
-pub struct FailedToLookupTypeError(String);
+/// Error type for failed type lookups
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub struct FailedToLookupTypeError {
+    type_name: String,
+    schema: Option<String>,
+}
 
 impl FailedToLookupTypeError {
-    /// Construct a new instance of this error type
-    pub fn new(type_name: String) -> Self {
-        Self(type_name)
+    /// Create a new internal lookup error
+    pub(crate) fn new_internal(cache_key: crate::metadata_lookup::GaussDBMetadataCacheKey<'static>) -> Self {
+        Self {
+            type_name: cache_key.type_name.into_owned(),
+            schema: cache_key.schema.map(|s| s.into_owned()),
+        }
+    }
+
+    /// Get the type name that failed to be looked up
+    pub fn type_name(&self) -> &str {
+        &self.type_name
+    }
+
+    /// Get the schema name if specified
+    pub fn schema(&self) -> Option<&str> {
+        self.schema.as_deref()
+    }
+}
+
+impl std::fmt::Display for FailedToLookupTypeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self.schema {
+            Some(schema) => write!(f, "Failed to lookup type {}.{}", schema, self.type_name),
+            None => write!(f, "Failed to lookup type {}", self.type_name),
+        }
     }
 }
 
 impl std::error::Error for FailedToLookupTypeError {}
 
-impl std::fmt::Display for FailedToLookupTypeError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Failed to find a type oid for `{}`", self.0)
-    }
-}
+
 
 /// Type metadata for GaussDB types
 ///
