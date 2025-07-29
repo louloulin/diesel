@@ -3,9 +3,9 @@
 //! This module provides support for PostgreSQL-style DISTINCT ON clauses,
 //! which are also supported by GaussDB.
 
+use crate::backend::GaussDB;
 use diesel::query_builder::{QueryFragment, AstPass};
 use diesel::result::QueryResult;
-use crate::backend::GaussDB;
 
 /// Represents a DISTINCT ON clause in a SELECT statement
 ///
@@ -43,14 +43,7 @@ where
     }
 }
 
-/// A trait for adding DISTINCT ON support to query builders
-pub trait DistinctOnDsl<Expr> {
-    /// The type returned by `.distinct_on()`
-    type Output;
 
-    /// Add a DISTINCT ON clause to the query
-    fn distinct_on(self, expr: Expr) -> Self::Output;
-}
 
 /// Helper trait for ordering with DISTINCT ON
 ///

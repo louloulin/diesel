@@ -3,9 +3,9 @@
 //! This module provides support for PostgreSQL-style LIMIT and OFFSET clauses,
 //! which are also supported by GaussDB.
 
+use crate::backend::GaussDB;
 use diesel::query_builder::{QueryFragment, AstPass};
 use diesel::result::QueryResult;
-use crate::backend::GaussDB;
 
 /// Represents a LIMIT clause in a SELECT statement
 #[derive(Debug, Clone)]

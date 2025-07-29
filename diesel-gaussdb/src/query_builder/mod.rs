@@ -9,9 +9,11 @@ use crate::backend::GaussDB;
 
 pub mod distinct_on;
 pub mod limit_offset;
+pub mod on_constraint;
 
 pub use self::distinct_on::DistinctOnClause;
 pub use self::limit_offset::LimitOffsetClause;
+pub use self::on_constraint::{OnConstraint, ConflictTarget, on_constraint};
 
 /// The GaussDB query builder
 ///
