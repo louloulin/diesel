@@ -3,7 +3,12 @@
 //! This module provides type mappings and value handling for GaussDB,
 //! which is largely PostgreSQL-compatible.
 
-
+// For now, we'll focus on basic type support without complex array/json implementations
+// mod array;
+// #[cfg(feature = "serde_json")]
+// mod json;
+// mod primitives;
+// mod custom;
 
 pub mod sql_types;
 

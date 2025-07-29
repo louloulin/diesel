@@ -38,6 +38,14 @@ pub struct FailedToLookupTypeError {
 }
 
 impl FailedToLookupTypeError {
+    /// Create a new lookup error with a simple message
+    pub fn new(message: &str) -> Self {
+        Self {
+            type_name: message.to_string(),
+            schema: None,
+        }
+    }
+
     /// Create a new internal lookup error
     pub(crate) fn new_internal(cache_key: crate::metadata_lookup::GaussDBMetadataCacheKey<'static>) -> Self {
         Self {

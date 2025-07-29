@@ -127,7 +127,27 @@ pub mod sql_types {
     #[diesel(postgres_type(oid = 3802, array_oid = 3807))]
     pub struct Jsonb;
 
-    /// The [`INET`] SQL type for IPv4 and IPv6 addresses.
+    /// The [`BYTEA`] SQL type.
+    ///
+    /// ### [`ToSql`] impls
+    ///
+    /// - [`Vec<u8>`]
+    /// - [`&[u8]`]
+    ///
+    /// ### [`FromSql`] impls
+    ///
+    /// - [`Vec<u8>`]
+    ///
+    /// [`ToSql`]: diesel::serialize::ToSql
+    /// [`FromSql`]: diesel::deserialize::FromSql
+    /// [`Vec<u8>`]: std::vec::Vec
+    /// [`&[u8]`]: https://doc.rust-lang.org/std/primitive.slice.html
+    /// [`BYTEA`]: https://www.postgresql.org/docs/current/datatype-binary.html
+    #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
+    #[diesel(postgres_type(oid = 17, array_oid = 1001))]
+    pub struct Bytea;
+
+    /// The [`INET`] SQL type.
     ///
     /// ### [`ToSql`] impls
     ///
@@ -148,15 +168,15 @@ pub mod sql_types {
     #[diesel(postgres_type(oid = 869, array_oid = 1041))]
     pub struct Inet;
 
-    /// The [`CIDR`] SQL type for network addresses.
+    /// The [`CIDR`] SQL type.
     ///
     /// ### [`ToSql`] impls
     ///
-    /// - [`ipnetwork::IpNetwork`] with `feature = "network-address"`
+    /// - [`ipnetwork::IpNetwork`] with `feature = "ipnet-address"`
     ///
     /// ### [`FromSql`] impls
     ///
-    /// - [`ipnetwork::IpNetwork`] with `feature = "network-address"`
+    /// - [`ipnetwork::IpNetwork`] with `feature = "ipnet-address"`
     ///
     /// [`ToSql`]: diesel::serialize::ToSql
     /// [`FromSql`]: diesel::deserialize::FromSql
@@ -165,7 +185,7 @@ pub mod sql_types {
     #[diesel(postgres_type(oid = 650, array_oid = 651))]
     pub struct Cidr;
 
-    /// The [`MACADDR`] SQL type for MAC addresses.
+    /// The [`MACADDR`] SQL type.
     ///
     /// ### [`ToSql`] impls
     ///
@@ -181,6 +201,23 @@ pub mod sql_types {
     #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
     #[diesel(postgres_type(oid = 829, array_oid = 1040))]
     pub struct MacAddr;
+
+    /// The [`MACADDR8`] SQL type.
+    ///
+    /// ### [`ToSql`] impls
+    ///
+    /// - `[u8; 8]`
+    ///
+    /// ### [`FromSql`] impls
+    ///
+    /// - `[u8; 8]`
+    ///
+    /// [`ToSql`]: diesel::serialize::ToSql
+    /// [`FromSql`]: diesel::deserialize::FromSql
+    /// [`MACADDR8`]: https://www.postgresql.org/docs/current/datatype-net-types.html
+    #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
+    #[diesel(postgres_type(oid = 774, array_oid = 775))]
+    pub struct MacAddr8;
 
     /// The [`MONEY`] SQL type.
     ///

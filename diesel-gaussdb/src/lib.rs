@@ -160,4 +160,45 @@ mod tests {
         let _csv = CopyFormat::Csv;
         let _binary = CopyFormat::Binary;
     }
+
+    #[test]
+    fn test_extended_type_system() {
+        use crate::types::sql_types::*;
+
+        // Test that all extended types can be instantiated
+        let _oid = Oid;
+        let _timestamptz = Timestamptz;
+        let _uuid = Uuid;
+        let _json = Json;
+        let _jsonb = Jsonb;
+        let _bytea = Bytea;
+        let _inet = Inet;
+        let _cidr = Cidr;
+        let _macaddr = MacAddr;
+        let _macaddr8 = MacAddr8;
+        let _money = Money;
+
+        // Test array types
+        use diesel::sql_types::{Integer, Text, Bool};
+        let _int_array: Array<Integer> = Array(Integer);
+        let _text_array: Array<Text> = Array(Text);
+        let _bool_array: Array<Bool> = Array(Bool);
+
+        // Test nested arrays
+        let _nested_int_array: Array<Array<Integer>> = Array(Array(Integer));
+
+        // Test that types implement Debug
+        use std::fmt::Debug;
+        let _: &dyn Debug = &_oid;
+        let _: &dyn Debug = &_timestamptz;
+        let _: &dyn Debug = &_uuid;
+        let _: &dyn Debug = &_json;
+        let _: &dyn Debug = &_jsonb;
+        let _: &dyn Debug = &_bytea;
+        let _: &dyn Debug = &_inet;
+        let _: &dyn Debug = &_cidr;
+        let _: &dyn Debug = &_macaddr;
+        let _: &dyn Debug = &_macaddr8;
+        let _: &dyn Debug = &_money;
+    }
 }
