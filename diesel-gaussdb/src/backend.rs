@@ -8,7 +8,7 @@ use diesel::query_builder::bind_collector::RawBytesBindCollector;
 use diesel::sql_types::{HasSqlType, TypeMetadata};
 
 use crate::query_builder::GaussDBQueryBuilder;
-use crate::types::GaussDBValue;
+use crate::value::GaussDBValue;
 
 /// The GaussDB backend
 ///
@@ -130,7 +130,12 @@ impl TypeMetadata for GaussDB {
 /// Trait for looking up type metadata in GaussDB
 pub trait GaussDBMetadataLookup {
     /// Look up metadata for a type
-    fn lookup_type(&mut self, type_name: &str) -> Option<GaussDBTypeMetadata>;
+    fn lookup_type(&mut self, type_name: &str, schema: Option<&str>) -> GaussDBTypeMetadata;
+
+    /// Cast to Any for downcasting
+    fn as_any<'a>(&mut self) -> &mut (dyn std::any::Any + 'a)
+    where
+        Self: 'a;
 }
 
 impl SqlDialect for GaussDB {

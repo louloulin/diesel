@@ -8,14 +8,22 @@ pub mod primitives;
 pub mod numeric;
 pub mod date_and_time;
 pub mod array;
-// pub mod ranges; // TODO: Complete range type implementation
+pub mod ranges;
 pub mod sql_types;
 
-// Advanced type support (to be implemented later)
-// mod array;
-// #[cfg(feature = "serde_json")]
-// mod json;
-// mod custom;
+// JSON support (feature-gated)
+#[cfg(feature = "serde_json")]
+pub mod json;
+
+// Advanced type support (feature-gated)
+#[cfg(feature = "uuid")]
+pub mod uuid;
+
+#[cfg(feature = "ipnetwork")]
+pub mod network_address;
+
+// Custom type support
+pub mod custom;
 
 // Re-export GaussDBValue from the value module
 pub use crate::value::GaussDBValue;

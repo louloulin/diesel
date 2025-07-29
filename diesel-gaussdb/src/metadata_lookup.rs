@@ -36,7 +36,7 @@ pub trait GaussDBMetadataLookup {
     }
 }
 
-impl<T> GaussDBMetadataLookup for T
+impl<T> crate::backend::GaussDBMetadataLookup for T
 where
     T: Connection<Backend = GaussDB> + GetGaussDBMetadataCache + LoadConnection<DefaultLoadingMode>,
 {

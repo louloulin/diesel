@@ -24,8 +24,8 @@ pub struct GaussDBResult {
 
 #[cfg(not(feature = "gaussdb"))]
 #[derive(Debug, Clone)]
-struct MockRow {
-    columns: Vec<(String, Option<Vec<u8>>)>,
+pub(crate) struct MockRow {
+    pub(crate) columns: Vec<(String, Option<Vec<u8>>)>,
 }
 
 impl GaussDBResult {

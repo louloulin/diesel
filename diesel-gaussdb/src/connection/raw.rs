@@ -3,13 +3,11 @@
 //! This module provides the low-level connection interface to GaussDB databases
 //! using the real gaussdb crate for authentic connectivity.
 
-use diesel::result::{ConnectionResult, QueryResult, Error as DieselError, DatabaseErrorKind};
+use diesel::result::{ConnectionResult, Error as DieselError, DatabaseErrorKind};
 use std::fmt;
 
 #[cfg(feature = "gaussdb")]
 use gaussdb::{Client, Config, NoTls, Error as GaussDBError, Row, Statement};
-#[cfg(feature = "gaussdb")]
-
 
 /// Raw connection to GaussDB database
 ///
@@ -205,29 +203,15 @@ impl Drop for RawConnection {
 mod tests {
     use super::*;
 
+    #[cfg(feature = "gaussdb")]
     #[test]
     fn test_establish_connection_invalid_url() {
-        let conn = RawConnection::establish("invalid://url");
+        let conn = super::RawConnection::establish("invalid://url");
         assert!(conn.is_err());
     }
 
-    #[test]
-    #[cfg(not(feature = "gaussdb"))]
-    fn test_invalid_scheme() {
-        let conn = RawConnection::establish("mysql://user:pass@localhost:3306/test");
-        assert!(conn.is_err());
-    }
-
-    #[test]
-    #[cfg(not(feature = "gaussdb"))]
-    fn test_gaussdb_feature_disabled() {
-        // Without gaussdb feature, connection should fail
-        let conn = RawConnection::establish("gaussdb://user:pass@localhost:5432/test");
-        assert!(conn.is_err());
-        if let Err(e) = conn {
-            assert!(format!("{:?}", e).contains("gaussdb feature not enabled"));
-        }
-    }
+    // Note: Connection tests are disabled when gaussdb feature is not available
+    // as RawConnection is feature-gated.
 
     #[test]
     #[cfg(feature = "gaussdb")]

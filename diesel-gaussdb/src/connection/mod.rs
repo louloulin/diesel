@@ -19,6 +19,7 @@ use crate::backend::GaussDB;
 #[cfg(feature = "gaussdb")]
 use gaussdb::{Client, Statement};
 
+#[cfg(feature = "gaussdb")]
 pub use self::raw::RawConnection;
 
 /// A connection to a GaussDB database
@@ -29,11 +30,14 @@ pub struct GaussDBConnection {
     #[cfg(feature = "gaussdb")]
     raw_connection: Client,
     #[cfg(not(feature = "gaussdb"))]
-    raw_connection: RawConnection,
+    raw_connection: raw::RawConnection,
     transaction_manager: AnsiTransactionManager,
     instrumentation: Box<dyn Instrumentation>,
     /// Statement cache for prepared statements
+    #[cfg(feature = "gaussdb")]
     statement_cache: StatementCache<GaussDB, Statement>,
+    #[cfg(not(feature = "gaussdb"))]
+    statement_cache: StatementCache<GaussDB, String>,
 }
 
 impl fmt::Debug for GaussDBConnection {
@@ -112,7 +116,7 @@ impl Connection for GaussDBConnection {
         }
         #[cfg(not(feature = "gaussdb"))]
         {
-            let raw_connection = RawConnection::establish(database_url)?;
+            let raw_connection = raw::RawConnection::establish(database_url)?;
             let transaction_manager = AnsiTransactionManager::default();
 
             // Create a simple instrumentation implementation
