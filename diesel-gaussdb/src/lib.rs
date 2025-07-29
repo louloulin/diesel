@@ -201,4 +201,21 @@ mod tests {
         let _: &dyn Debug = &_macaddr8;
         let _: &dyn Debug = &_money;
     }
+
+    #[test]
+    fn test_expression_system_foundation() {
+        use crate::expression::*;
+
+        // Test that expression modules are accessible
+        array::array_placeholder();
+        array_comparison::any_placeholder();
+        array_comparison::all_placeholder();
+        expression_methods::expression_methods_placeholder();
+        functions::functions_placeholder();
+        operators::operators_placeholder();
+        dsl::dsl_placeholder();
+
+        // This test verifies that the expression system foundation is in place
+        // for future array expression implementations
+    }
 }
