@@ -42,13 +42,21 @@ pub mod expression_methods {
     }
 }
 
-/// Placeholder for functions
+/// GaussDB specific functions
 pub mod functions {
-    //! GaussDB specific functions (placeholder)
+    //! GaussDB specific functions
+    //!
+    //! This module provides PostgreSQL-compatible functions for GaussDB,
+    //! including date/time functions, string functions, and mathematical functions.
 
-    /// Placeholder for functions
+    pub mod date_and_time;
+
+    /// Re-export date and time functions
+    pub use self::date_and_time::*;
+
+    /// Placeholder for other functions
     pub fn functions_placeholder() {
-        // This is a placeholder for functions
+        // This is a placeholder for other functions
     }
 }
 
@@ -64,6 +72,10 @@ pub mod operators {
 
 /// DSL module for convenient imports
 pub mod dsl {
+    pub use super::functions::date_and_time::{
+        current_date, current_time, current_timestamp, date_part, extract, now,
+    };
+
     /// Placeholder for DSL functions
     pub fn dsl_placeholder() {
         // This is a placeholder for DSL functionality

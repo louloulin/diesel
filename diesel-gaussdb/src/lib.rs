@@ -218,4 +218,39 @@ mod tests {
         // This test verifies that the expression system foundation is in place
         // for future array expression implementations
     }
+
+    #[test]
+    fn test_date_time_expressions() {
+        use crate::expression::dsl::*;
+        use crate::types::sql_types::Timestamptz;
+        use diesel::sql_types::{Date, Time, Timestamp, Double};
+
+        // Test that date/time functions are accessible and have correct types
+        let now_expr = now;
+        let current_timestamp_expr = current_timestamp;
+        let current_date_expr = current_date;
+        let current_time_expr = current_time;
+
+        // Test type assertions
+        fn assert_timestamptz_expr<T: diesel::expression::Expression<SqlType = Timestamptz>>(_: T) {}
+        fn assert_date_expr<T: diesel::expression::Expression<SqlType = Date>>(_: T) {}
+        fn assert_time_expr<T: diesel::expression::Expression<SqlType = Time>>(_: T) {}
+        fn assert_double_expr<T: diesel::expression::Expression<SqlType = Double>>(_: T) {}
+
+        assert_timestamptz_expr(now_expr);
+        assert_timestamptz_expr(current_timestamp_expr);
+        assert_date_expr(current_date_expr);
+        assert_time_expr(current_time_expr);
+
+        // Test extract and date_part functions
+        let timestamp_expr = diesel::dsl::sql::<Timestamp>("'2023-12-25'");
+        let extract_expr = extract("YEAR", timestamp_expr);
+        let date_part_expr = date_part("month", diesel::dsl::sql::<Timestamp>("'2023-12-25'"));
+
+        assert_double_expr(extract_expr);
+        assert_double_expr(date_part_expr);
+
+        // This test verifies that the date/time expression system is working
+        // and all functions have the correct SQL types
+    }
 }
