@@ -26,7 +26,7 @@ use diesel::serialize::{self, Output};
 /// #     use diesel::sql_types::{Integer, Text, SqlType};
 /// #
 /// #[derive(SqlType)]
-/// #[diesel(gaussdb_type(name = "my_type"))]
+/// #[diesel(postgres_type(name = "my_type"))]
 /// struct MyType;
 ///
 /// #[derive(Debug)]

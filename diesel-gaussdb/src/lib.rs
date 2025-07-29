@@ -58,6 +58,14 @@ pub mod data_types {
 // Re-export commonly used types from diesel
 pub use diesel::prelude::*;
 
+/// Prelude module for convenient imports
+pub mod prelude {
+    pub use crate::backend::GaussDB;
+    pub use crate::connection::GaussDBConnection;
+    pub use crate::query_builder::GaussDBQueryBuilder;
+    pub use diesel::prelude::*;
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

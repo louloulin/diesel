@@ -45,10 +45,10 @@ where
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// # use diesel_gaussdb::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// #     let mut conn = establish_connection();
+    /// #     let mut conn = GaussDBConnection::establish("gaussdb://localhost/test")?;
     /// conn.build_transaction()
     ///     .read_only()
     ///     .run::<_, diesel::result::Error, _>(|conn| {
@@ -70,11 +70,11 @@ where
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// # use diesel_gaussdb::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// #     let mut conn = establish_connection();
-    /// conn.build_transaction().read_write().run(|conn| {
+    /// #     let mut conn = GaussDBConnection::establish("gaussdb://localhost/test")?;
+    /// conn.build_transaction().read_write().run::<_, diesel::result::Error, _>(|conn| {
     ///     // Read and write operations
     ///     Ok(())
     /// })?;
@@ -90,11 +90,11 @@ where
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// # use diesel_gaussdb::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// #     let mut conn = establish_connection();
-    /// conn.build_transaction().deferrable().run(|conn| Ok(()))?;
+    /// #     let mut conn = GaussDBConnection::establish("gaussdb://localhost/test")?;
+    /// conn.build_transaction().deferrable().run::<_, diesel::result::Error, _>(|conn| Ok(()))?;
     /// #     Ok(())
     /// # }
     /// ```
@@ -110,11 +110,11 @@ where
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// # use diesel_gaussdb::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// #     let mut conn = establish_connection();
-    /// conn.build_transaction().not_deferrable().run(|conn| Ok(()))?;
+    /// #     let mut conn = GaussDBConnection::establish("gaussdb://localhost/test")?;
+    /// conn.build_transaction().not_deferrable().run::<_, diesel::result::Error, _>(|conn| Ok(()))?;
     /// #     Ok(())
     /// # }
     /// ```
@@ -130,11 +130,11 @@ where
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// # use diesel_gaussdb::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// #     let mut conn = establish_connection();
-    /// conn.build_transaction().read_committed().run(|conn| Ok(()))?;
+    /// #     let mut conn = GaussDBConnection::establish("gaussdb://localhost/test")?;
+    /// conn.build_transaction().read_committed().run::<_, diesel::result::Error, _>(|conn| Ok(()))?;
     /// #     Ok(())
     /// # }
     /// ```
@@ -147,13 +147,13 @@ where
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// # use diesel_gaussdb::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// #     let mut conn = establish_connection();
+    /// #     let mut conn = GaussDBConnection::establish("gaussdb://localhost/test")?;
     /// conn.build_transaction()
     ///     .repeatable_read()
-    ///     .run(|conn| Ok(()))?;
+    ///     .run::<_, diesel::result::Error, _>(|conn| Ok(()))?;
     /// #     Ok(())
     /// # }
     /// ```
@@ -166,11 +166,11 @@ where
     ///
     /// # Example
     ///
-    /// ```rust
+    /// ```rust,no_run
     /// # use diesel_gaussdb::prelude::*;
     /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-    /// #     let mut conn = establish_connection();
-    /// conn.build_transaction().serializable().run(|conn| Ok(()))?;
+    /// #     let mut conn = GaussDBConnection::establish("gaussdb://localhost/test")?;
+    /// conn.build_transaction().serializable().run::<_, diesel::result::Error, _>(|conn| Ok(()))?;
     /// #     Ok(())
     /// # }
     /// ```

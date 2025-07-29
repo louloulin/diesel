@@ -53,6 +53,29 @@ impl fmt::Debug for GaussDBConnection {
 
 impl ConnectionSealed for GaussDBConnection {}
 
+impl GaussDBConnection {
+    /// Build a transaction, specifying additional details such as isolation level
+    ///
+    /// See [`TransactionBuilder`] for more examples.
+    ///
+    /// [`TransactionBuilder`]: crate::transaction::TransactionBuilder
+    ///
+    /// ```rust,no_run
+    /// # use diesel_gaussdb::prelude::*;
+    /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// #     let mut conn = GaussDBConnection::establish("gaussdb://localhost/test")?;
+    /// conn.build_transaction()
+    ///     .read_only()
+    ///     .serializable()
+    ///     .deferrable()
+    ///     .run(|conn| Ok(()))
+    /// # }
+    /// ```
+    pub fn build_transaction(&mut self) -> crate::transaction::TransactionBuilder<'_, Self> {
+        crate::transaction::TransactionBuilder::new(self)
+    }
+}
+
 impl SimpleConnection for GaussDBConnection {
     fn batch_execute(&mut self, query: &str) -> QueryResult<()> {
         #[cfg(feature = "gaussdb")]
