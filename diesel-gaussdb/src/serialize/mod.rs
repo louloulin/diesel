@@ -1,6 +1,12 @@
 //! Serialization support for GaussDB
 //!
-//! This module will contain serialization implementations for GaussDB types.
-//! Currently it's a placeholder for future implementation.
+//! This module provides serialization functionality for GaussDB types.
 
-// Placeholder module - will be implemented in later phases
+mod write_tuple;
+
+use diesel::serialize::{self, Output, ToSql};
+use crate::backend::GaussDB;
+
+/// Re-export common serialization types
+pub use diesel::serialize::{IsNull, Result};
+pub use self::write_tuple::WriteTuple;
