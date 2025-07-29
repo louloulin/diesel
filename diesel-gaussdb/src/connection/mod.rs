@@ -3,6 +3,10 @@
 //! This module provides the connection interface for GaussDB databases.
 //! Uses the real gaussdb crate for authentic GaussDB connectivity.
 
+pub mod raw;
+pub mod result;
+pub mod row;
+
 use diesel::connection::statement_cache::StatementCache;
 use diesel::connection::{
     AnsiTransactionManager, Connection, ConnectionSealed, Instrumentation, SimpleConnection,
@@ -11,18 +15,11 @@ use diesel::result::{ConnectionResult, QueryResult, Error as DieselError};
 use std::fmt;
 
 use crate::backend::GaussDB;
-use crate::query_builder::GaussDBQueryBuilder;
 
 #[cfg(feature = "gaussdb")]
-use gaussdb::{Client, Config, NoTls, Error as GaussDBError};
-#[cfg(feature = "gaussdb")]
-
-
-mod raw;
-mod stmt;
+use gaussdb::{Client, Statement};
 
 pub use self::raw::RawConnection;
-pub use self::stmt::Statement;
 
 /// A connection to a GaussDB database
 ///
