@@ -3,9 +3,8 @@
 //! This module provides the connection interface for GaussDB databases.
 //! Uses PostgreSQL protocol for GaussDB compatibility.
 
-use diesel::connection::{Connection, ConnectionSealed, SimpleConnection, Instrumentation};
+use diesel::connection::{Connection, ConnectionSealed, SimpleConnection, AnsiTransactionManager, Instrumentation};
 use diesel::result::{ConnectionResult, QueryResult, Error as DieselError};
-use diesel::connection::AnsiTransactionManager;
 use crate::backend::GaussDB;
 use std::fmt;
 
@@ -23,7 +22,8 @@ pub struct GaussDBConnection {
     raw_connection: RawConnection,
     transaction_manager: AnsiTransactionManager,
     instrumentation: Box<dyn Instrumentation>,
-
+    /// Statement cache for prepared statements
+    statement_cache: std::collections::HashMap<String, Statement>,
 }
 
 impl fmt::Debug for GaussDBConnection {
@@ -71,6 +71,7 @@ impl Connection for GaussDBConnection {
             raw_connection,
             transaction_manager,
             instrumentation,
+            statement_cache: std::collections::HashMap::new(),
         })
     }
 

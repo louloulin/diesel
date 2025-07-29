@@ -7,6 +7,12 @@ use diesel::query_builder::QueryBuilder;
 use diesel::result::QueryResult;
 use crate::backend::GaussDB;
 
+pub mod distinct_on;
+pub mod limit_offset;
+
+pub use self::distinct_on::DistinctOnClause;
+pub use self::limit_offset::LimitOffsetClause;
+
 /// The GaussDB query builder
 ///
 /// This query builder generates PostgreSQL-compatible SQL that works with GaussDB.

@@ -58,13 +58,13 @@ fn test_identifier_escaping() {
 fn test_type_metadata() {
     // Test that our type metadata works correctly
     let metadata = GaussDBTypeMetadata::new(23, 1007);
-    assert_eq!(metadata.oid(), 23);
-    assert_eq!(metadata.array_oid(), 1007);
-    
+    assert_eq!(metadata.oid().unwrap(), 23);
+    assert_eq!(metadata.array_oid().unwrap(), 1007);
+
     // Test conversion from tuple
     let metadata2: GaussDBTypeMetadata = (25, 1009).into();
-    assert_eq!(metadata2.oid(), 25);
-    assert_eq!(metadata2.array_oid(), 1009);
+    assert_eq!(metadata2.oid().unwrap(), 25);
+    assert_eq!(metadata2.array_oid().unwrap(), 1009);
 }
 
 #[test]

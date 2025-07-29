@@ -36,6 +36,7 @@ pub mod backend;
 pub mod connection;
 pub mod query_builder;
 pub mod types;
+pub mod gaussdb_extensions;
 pub mod expression;
 pub mod serialize;
 

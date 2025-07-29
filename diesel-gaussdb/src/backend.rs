@@ -17,31 +17,68 @@ use crate::types::GaussDBValue;
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq, Default)]
 pub struct GaussDB;
 
+/// Inner type metadata for GaussDB types
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+pub struct InnerGaussDBTypeMetadata {
+    pub(crate) oid: u32,
+    pub(crate) array_oid: u32,
+}
+
+impl From<(u32, u32)> for InnerGaussDBTypeMetadata {
+    fn from((oid, array_oid): (u32, u32)) -> Self {
+        Self { oid, array_oid }
+    }
+}
+
+/// This error indicates that a type lookup for a custom
+/// GaussDB type failed
+#[derive(Clone, Debug, Hash, PartialEq, Eq)]
+pub struct FailedToLookupTypeError(String);
+
+impl FailedToLookupTypeError {
+    /// Construct a new instance of this error type
+    pub fn new(type_name: String) -> Self {
+        Self(type_name)
+    }
+}
+
+impl std::error::Error for FailedToLookupTypeError {}
+
+impl std::fmt::Display for FailedToLookupTypeError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Failed to find a type oid for `{}`", self.0)
+    }
+}
+
 /// Type metadata for GaussDB types
 ///
 /// Since GaussDB is PostgreSQL-compatible, we use similar metadata structure
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
-pub struct GaussDBTypeMetadata {
-    /// The OID of the type
-    pub oid: u32,
-    /// The OID of the array type
-    pub array_oid: u32,
-}
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[must_use]
+pub struct GaussDBTypeMetadata(Result<InnerGaussDBTypeMetadata, FailedToLookupTypeError>);
 
 impl GaussDBTypeMetadata {
-    /// Create new type metadata
-    pub fn new(oid: u32, array_oid: u32) -> Self {
-        Self { oid, array_oid }
+    /// Create new type metadata based on known constant OIDs
+    pub fn new(type_oid: u32, array_oid: u32) -> Self {
+        Self(Ok(InnerGaussDBTypeMetadata {
+            oid: type_oid,
+            array_oid,
+        }))
+    }
+
+    /// Create a new instance based on a result
+    pub fn from_result(r: Result<(u32, u32), FailedToLookupTypeError>) -> Self {
+        Self(r.map(|(oid, array_oid)| InnerGaussDBTypeMetadata { oid, array_oid }))
     }
 
     /// Get the OID of this type
-    pub fn oid(&self) -> u32 {
-        self.oid
+    pub fn oid(&self) -> Result<u32, impl std::error::Error + Send + Sync + use<>> {
+        self.0.as_ref().map(|i| i.oid).map_err(Clone::clone)
     }
 
     /// Get the array OID of this type
-    pub fn array_oid(&self) -> u32 {
-        self.array_oid
+    pub fn array_oid(&self) -> Result<u32, impl std::error::Error + Send + Sync + use<>> {
+        self.0.as_ref().map(|i| i.array_oid).map_err(Clone::clone)
     }
 }
 
@@ -182,14 +219,14 @@ mod tests {
     #[test]
     fn test_type_metadata() {
         let metadata = GaussDBTypeMetadata::new(23, 1007);
-        assert_eq!(metadata.oid(), 23);
-        assert_eq!(metadata.array_oid(), 1007);
+        assert_eq!(metadata.oid().unwrap(), 23);
+        assert_eq!(metadata.array_oid().unwrap(), 1007);
     }
 
     #[test]
     fn test_type_metadata_from_tuple() {
         let metadata: GaussDBTypeMetadata = (23, 1007).into();
-        assert_eq!(metadata.oid(), 23);
-        assert_eq!(metadata.array_oid(), 1007);
+        assert_eq!(metadata.oid().unwrap(), 23);
+        assert_eq!(metadata.array_oid().unwrap(), 1007);
     }
 }

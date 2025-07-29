@@ -5,6 +5,8 @@
 
 use std::fmt;
 
+pub mod sql_types;
+
 /// A raw value from GaussDB
 ///
 /// This represents a value as received from the database before deserialization.
