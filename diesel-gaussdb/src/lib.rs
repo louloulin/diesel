@@ -131,4 +131,33 @@ mod tests {
         let metadata = cache.lookup_type(&key);
         assert!(metadata.is_some());
     }
+
+    #[test]
+    fn test_copy_operations() {
+        use crate::query_builder::copy::{CopyFormat, CopyFromQuery, CopyToQuery};
+
+        // Test COPY FROM functionality
+        let copy_from: CopyFromQuery<(), ()> = CopyFromQuery::new(())
+            .with_format(CopyFormat::Csv)
+            .with_delimiter(',')
+            .with_null("NULL".to_string())
+            .with_quote('"')
+            .with_freeze(true);
+
+        // Test that the query was configured correctly
+        assert!(format!("{:?}", copy_from).contains("Csv"));
+
+        // Test COPY TO functionality
+        let copy_to = CopyToQuery::<()>::new()
+            .with_format(CopyFormat::Binary)
+            .with_header(true);
+
+        // Test that the query was configured correctly
+        assert!(format!("{:?}", copy_to).contains("Binary"));
+
+        // Test format enum variants exist
+        let _text = CopyFormat::Text;
+        let _csv = CopyFormat::Csv;
+        let _binary = CopyFormat::Binary;
+    }
 }
