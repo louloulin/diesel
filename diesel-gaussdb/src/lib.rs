@@ -47,6 +47,13 @@ pub use backend::GaussDB;
 pub use connection::GaussDBConnection;
 pub use query_builder::GaussDBQueryBuilder;
 
+/// Data types for GaussDB
+pub mod data_types {
+    pub use crate::types::money::{GaussDBMoney, Cents};
+    pub use crate::types::mac_addr::MacAddress;
+    pub use crate::types::mac_addr_8::MacAddress8;
+}
+
 // Re-export commonly used types from diesel
 pub use diesel::prelude::*;
 

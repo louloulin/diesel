@@ -235,6 +235,38 @@ pub mod sql_types {
     #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
     #[diesel(postgres_type(oid = 790, array_oid = 791))]
     pub struct Money;
+
+    // Multirange types
+
+    /// The [`INT4MULTIRANGE`] SQL type.
+    #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
+    #[diesel(postgres_type(oid = 4451, array_oid = 6150))]
+    pub struct Int4multirange;
+
+    /// The [`INT8MULTIRANGE`] SQL type.
+    #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
+    #[diesel(postgres_type(oid = 4536, array_oid = 6157))]
+    pub struct Int8multirange;
+
+    /// The [`NUMMULTIRANGE`] SQL type.
+    #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
+    #[diesel(postgres_type(oid = 4532, array_oid = 6151))]
+    pub struct Nummultirange;
+
+    /// The [`TSMULTIRANGE`] SQL type.
+    #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
+    #[diesel(postgres_type(oid = 4533, array_oid = 6152))]
+    pub struct Tsmultirange;
+
+    /// The [`TSTZMULTIRANGE`] SQL type.
+    #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
+    #[diesel(postgres_type(oid = 4534, array_oid = 6153))]
+    pub struct Tstzmultirange;
+
+    /// The [`DATEMULTIRANGE`] SQL type.
+    #[derive(Debug, Clone, Copy, Default, QueryId, SqlType)]
+    #[diesel(postgres_type(oid = 4535, array_oid = 6155))]
+    pub struct Datemultirange;
 }
 
 // Re-export for convenience

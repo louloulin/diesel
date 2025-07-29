@@ -18,6 +18,10 @@ pub mod json;
 // Advanced type support (feature-gated)
 #[cfg(feature = "uuid")]
 pub mod uuid;
+pub mod multirange;
+pub mod mac_addr;
+pub mod mac_addr_8;
+pub mod money;
 
 #[cfg(feature = "ipnetwork")]
 pub mod network_address;

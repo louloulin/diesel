@@ -48,6 +48,15 @@ impl<'a> GaussDBValue<'a> {
     pub fn is_empty(&self) -> bool {
         self.raw_bytes.map_or(false, |bytes| bytes.is_empty())
     }
+
+    /// Create a test value for testing purposes
+    #[cfg(test)]
+    pub fn for_test(bytes: &'a [u8]) -> Self {
+        Self {
+            raw_bytes: Some(bytes),
+            type_oid: 0,
+        }
+    }
 }
 
 impl<'a> fmt::Debug for GaussDBValue<'a> {
