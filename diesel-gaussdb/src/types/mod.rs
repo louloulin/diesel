@@ -3,14 +3,19 @@
 //! This module provides type mappings and value handling for GaussDB,
 //! which is largely PostgreSQL-compatible.
 
-// For now, we'll focus on basic type support without complex array/json implementations
+// Basic type support modules
+pub mod primitives;
+pub mod numeric;
+pub mod date_and_time;
+pub mod array;
+// pub mod ranges; // TODO: Complete range type implementation
+pub mod sql_types;
+
+// Advanced type support (to be implemented later)
 // mod array;
 // #[cfg(feature = "serde_json")]
 // mod json;
-// mod primitives;
 // mod custom;
-
-pub mod sql_types;
 
 // Re-export GaussDBValue from the value module
 pub use crate::value::GaussDBValue;

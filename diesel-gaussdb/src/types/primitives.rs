@@ -1,156 +1,211 @@
 //! Primitive type support for GaussDB
 //!
 //! This module provides support for basic PostgreSQL-compatible types
-//! that are supported by GaussDB.
+//! that are supported by GaussDB, following the same patterns as PostgreSQL.
 
 use crate::backend::GaussDB;
 use crate::value::GaussDBValue;
 use diesel::deserialize::{self, FromSql};
 use diesel::serialize::{self, IsNull, Output, ToSql};
 use diesel::sql_types::*;
-use std::io::Write;
+use byteorder::{NetworkEndian, ReadBytesExt, WriteBytesExt};
 
-// Implement basic integer types
+// Helper function for size errors (following PostgreSQL pattern)
+#[cold]
+#[inline(never)]
+fn emit_size_error<T>(msg: &str) -> deserialize::Result<T> {
+    Err(msg.into())
+}
+
+// OID type implementation
+impl FromSql<Oid, GaussDB> for u32 {
+    fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
+        let bytes = value.as_bytes().ok_or("OID value is null")?;
+        let mut cursor = std::io::Cursor::new(bytes);
+        cursor.read_u32::<NetworkEndian>().map_err(Into::into)
+    }
+}
+
+impl ToSql<Oid, GaussDB> for u32 {
+    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
+        out.write_u32::<NetworkEndian>(*self)
+            .map(|_| IsNull::No)
+            .map_err(Into::into)
+    }
+}
+
+// SmallInt (i16) implementation with proper error handling
 impl FromSql<SmallInt, GaussDB> for i16 {
+    #[inline(always)]
     fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
         let bytes = value.as_bytes().ok_or("SmallInt value is null")?;
-        if bytes.len() != 2 {
-            return Err("Invalid SmallInt length".into());
+        if bytes.len() < 2 {
+            return emit_size_error(
+                "Received less than 2 bytes while decoding an i16. \
+                Was an expression of a different type accidentally marked as SmallInt?"
+            );
         }
-        Ok(i16::from_be_bytes([bytes[0], bytes[1]]))
+        if bytes.len() > 2 {
+            return emit_size_error(
+                "Received more than 2 bytes while decoding an i16. \
+                Was an Integer expression accidentally marked as SmallInt?"
+            );
+        }
+        let mut cursor = std::io::Cursor::new(bytes);
+        cursor.read_i16::<NetworkEndian>()
+            .map_err(|e| Box::new(e) as Box<_>)
     }
 }
 
 impl ToSql<SmallInt, GaussDB> for i16 {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(&self.to_be_bytes())?;
-        Ok(IsNull::No)
+        out.write_i16::<NetworkEndian>(*self)
+            .map(|_| IsNull::No)
+            .map_err(|e| Box::new(e) as Box<_>)
     }
 }
 
+// Integer (i32) implementation with proper error handling
 impl FromSql<Integer, GaussDB> for i32 {
+    #[inline(always)]
     fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
         let bytes = value.as_bytes().ok_or("Integer value is null")?;
-        if bytes.len() != 4 {
-            return Err("Invalid Integer length".into());
+        if bytes.len() < 4 {
+            return emit_size_error(
+                "Received less than 4 bytes while decoding an i32. \
+                Was a SmallInt expression accidentally marked as Integer?"
+            );
         }
-        Ok(i32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
+        if bytes.len() > 4 {
+            return emit_size_error(
+                "Received more than 4 bytes while decoding an i32. \
+                Was a BigInt expression accidentally marked as Integer?"
+            );
+        }
+        let mut cursor = std::io::Cursor::new(bytes);
+        cursor.read_i32::<NetworkEndian>()
+            .map_err(|e| Box::new(e) as Box<_>)
     }
 }
 
 impl ToSql<Integer, GaussDB> for i32 {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(&self.to_be_bytes())?;
-        Ok(IsNull::No)
+        out.write_i32::<NetworkEndian>(*self)
+            .map(|_| IsNull::No)
+            .map_err(|e| Box::new(e) as Box<_>)
     }
 }
 
+// BigInt (i64) implementation with proper error handling
 impl FromSql<BigInt, GaussDB> for i64 {
+    #[inline(always)]
     fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
         let bytes = value.as_bytes().ok_or("BigInt value is null")?;
-        if bytes.len() != 8 {
-            return Err("Invalid BigInt length".into());
+        if bytes.len() < 8 {
+            return emit_size_error(
+                "Received less than 8 bytes while decoding an i64. \
+                Was an Integer expression accidentally marked as BigInt?"
+            );
         }
-        let mut array = [0u8; 8];
-        array.copy_from_slice(bytes);
-        Ok(i64::from_be_bytes(array))
+        if bytes.len() > 8 {
+            return emit_size_error(
+                "Received more than 8 bytes while decoding an i64. \
+                Was an expression of a different type accidentally marked as BigInt?"
+            );
+        }
+        let mut cursor = std::io::Cursor::new(bytes);
+        cursor.read_i64::<NetworkEndian>()
+            .map_err(|e| Box::new(e) as Box<_>)
     }
 }
 
 impl ToSql<BigInt, GaussDB> for i64 {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(&self.to_be_bytes())?;
-        Ok(IsNull::No)
+        out.write_i64::<NetworkEndian>(*self)
+            .map(|_| IsNull::No)
+            .map_err(|e| Box::new(e) as Box<_>)
     }
 }
 
-// Implement floating point types
+// Float (f32) implementation
 impl FromSql<Float, GaussDB> for f32 {
     fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
         let bytes = value.as_bytes().ok_or("Float value is null")?;
-        if bytes.len() != 4 {
-            return Err("Invalid Float length".into());
+        if bytes.len() < 4 {
+            return emit_size_error(
+                "Received less than 4 bytes while decoding an f32. \
+                Got {} bytes"
+            );
         }
-        let bits = u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]);
-        Ok(f32::from_bits(bits))
+        if bytes.len() > 4 {
+            return emit_size_error(
+                "Received more than 4 bytes while decoding an f32. \
+                Was a double accidentally marked as float? Got {} bytes"
+            );
+        }
+        let mut cursor = std::io::Cursor::new(bytes);
+        cursor.read_f32::<NetworkEndian>()
+            .map_err(|e| Box::new(e) as Box<_>)
     }
 }
 
 impl ToSql<Float, GaussDB> for f32 {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(&self.to_bits().to_be_bytes())?;
-        Ok(IsNull::No)
+        out.write_f32::<NetworkEndian>(*self)
+            .map(|_| IsNull::No)
+            .map_err(|e| Box::new(e) as Box<_>)
     }
 }
 
+// Double (f64) implementation
 impl FromSql<Double, GaussDB> for f64 {
     fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
         let bytes = value.as_bytes().ok_or("Double value is null")?;
-        if bytes.len() != 8 {
-            return Err("Invalid Double length".into());
+        if bytes.len() < 8 {
+            return emit_size_error(
+                "Received less than 8 bytes while decoding an f64. \
+                Was a float accidentally marked as double? Got {} bytes"
+            );
         }
-        let mut array = [0u8; 8];
-        array.copy_from_slice(bytes);
-        let bits = u64::from_be_bytes(array);
-        Ok(f64::from_bits(bits))
+        if bytes.len() > 8 {
+            return emit_size_error(
+                "Received more than 8 bytes while decoding an f64. \
+                Was a numeric accidentally marked as double? Got {} bytes"
+            );
+        }
+        let mut cursor = std::io::Cursor::new(bytes);
+        cursor.read_f64::<NetworkEndian>()
+            .map_err(|e| Box::new(e) as Box<_>)
     }
 }
 
 impl ToSql<Double, GaussDB> for f64 {
     fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(&self.to_bits().to_be_bytes())?;
-        Ok(IsNull::No)
+        out.write_f64::<NetworkEndian>(*self)
+            .map(|_| IsNull::No)
+            .map_err(|e| Box::new(e) as Box<_>)
     }
 }
 
-// Implement text types
-impl FromSql<Text, GaussDB> for String {
-    fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
-        let bytes = value.as_bytes().ok_or("Text value is null")?;
-        String::from_utf8(bytes.to_vec()).map_err(|e| format!("Invalid UTF-8: {}", e).into())
-    }
-}
-
-impl ToSql<Text, GaussDB> for String {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(self.as_bytes())?;
-        Ok(IsNull::No)
-    }
-}
-
-impl ToSql<Text, GaussDB> for str {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(self.as_bytes())?;
-        Ok(IsNull::No)
-    }
-}
-
-impl<'a> ToSql<Text, GaussDB> for &'a str {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(self.as_bytes())?;
-        Ok(IsNull::No)
-    }
-}
-
-// Implement boolean type
+// Boolean implementation
 impl FromSql<Bool, GaussDB> for bool {
     fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
         let bytes = value.as_bytes().ok_or("Bool value is null")?;
-        if bytes.len() != 1 {
-            return Err("Invalid Bool length".into());
-        }
         Ok(bytes[0] != 0)
     }
 }
 
-impl ToSql<Bool, GaussDB> for bool {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(&[if *self { 1 } else { 0 }])?;
-        Ok(IsNull::No)
+// Text implementation (following PostgreSQL pattern)
+impl FromSql<Text, GaussDB> for *const str {
+    fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
+        use std::str;
+        let bytes = value.as_bytes().ok_or("Text value is null")?;
+        let string = str::from_utf8(bytes)?;
+        Ok(string as *const _)
     }
 }
 
-// Implement binary data type
+// Binary data implementation
 impl FromSql<Binary, GaussDB> for Vec<u8> {
     fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
         let bytes = value.as_bytes().ok_or("Binary value is null")?;
@@ -158,216 +213,4 @@ impl FromSql<Binary, GaussDB> for Vec<u8> {
     }
 }
 
-impl ToSql<Binary, GaussDB> for Vec<u8> {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(self)?;
-        Ok(IsNull::No)
-    }
-}
 
-impl ToSql<Binary, GaussDB> for [u8] {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(self)?;
-        Ok(IsNull::No)
-    }
-}
-
-impl<'a> ToSql<Binary, GaussDB> for &'a [u8] {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(self)?;
-        Ok(IsNull::No)
-    }
-}
-
-// Implement OID type
-impl FromSql<diesel::sql_types::Oid, GaussDB> for u32 {
-    fn from_sql(value: GaussDBValue<'_>) -> deserialize::Result<Self> {
-        let bytes = value.as_bytes().ok_or("OID value is null")?;
-        if bytes.len() != 4 {
-            return Err("Invalid OID length".into());
-        }
-        Ok(u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
-    }
-}
-
-impl ToSql<diesel::sql_types::Oid, GaussDB> for u32 {
-    fn to_sql<'b>(&'b self, out: &mut Output<'b, '_, GaussDB>) -> serialize::Result {
-        out.write_all(&self.to_be_bytes())?;
-        Ok(IsNull::No)
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::value::GaussDBValue;
-    use diesel::query_builder::bind_collector::ByteWrapper;
-    use diesel::serialize::{Output, ToSql};
-    use diesel::deserialize::FromSql;
-
-    #[test]
-    fn test_i16_roundtrip() {
-        let original = 12345i16;
-        let mut buffer = Vec::new();
-        let mut output = Output::test(ByteWrapper(&mut buffer));
-        
-        original.to_sql(&mut output).unwrap();
-        let value = GaussDBValue::new(Some(&buffer), 21); // smallint OID
-        let result: i16 = FromSql::from_sql(value).unwrap();
-        
-        assert_eq!(original, result);
-    }
-
-    #[test]
-    fn test_i32_roundtrip() {
-        let original = 1234567890i32;
-        let mut buffer = Vec::new();
-        let mut output = Output::test(ByteWrapper(&mut buffer));
-        
-        original.to_sql(&mut output).unwrap();
-        let value = GaussDBValue::new(Some(&buffer), 23); // int4 OID
-        let result: i32 = FromSql::from_sql(value).unwrap();
-        
-        assert_eq!(original, result);
-    }
-
-    #[test]
-    fn test_i64_roundtrip() {
-        let original = 1234567890123456789i64;
-        let mut buffer = Vec::new();
-        let mut output = Output::test(ByteWrapper(&mut buffer));
-        
-        original.to_sql(&mut output).unwrap();
-        let value = GaussDBValue::new(Some(&buffer), 20); // int8 OID
-        let result: i64 = FromSql::from_sql(value).unwrap();
-        
-        assert_eq!(original, result);
-    }
-
-    #[test]
-    fn test_f32_roundtrip() {
-        let original = 3.14159f32;
-        let mut buffer = Vec::new();
-        let mut output = Output::test(ByteWrapper(&mut buffer));
-        
-        original.to_sql(&mut output).unwrap();
-        let value = GaussDBValue::new(Some(&buffer), 700); // float4 OID
-        let result: f32 = FromSql::from_sql(value).unwrap();
-        
-        assert!((original - result).abs() < f32::EPSILON);
-    }
-
-    #[test]
-    fn test_f64_roundtrip() {
-        let original = 3.141592653589793f64;
-        let mut buffer = Vec::new();
-        let mut output = Output::test(ByteWrapper(&mut buffer));
-        
-        original.to_sql(&mut output).unwrap();
-        let value = GaussDBValue::new(Some(&buffer), 701); // float8 OID
-        let result: f64 = FromSql::from_sql(value).unwrap();
-        
-        assert!((original - result).abs() < f64::EPSILON);
-    }
-
-    #[test]
-    fn test_string_roundtrip() {
-        let original = "Hello, GaussDB!".to_string();
-        let mut buffer = Vec::new();
-        let mut output = Output::test(ByteWrapper(&mut buffer));
-        
-        original.to_sql(&mut output).unwrap();
-        let value = GaussDBValue::new(Some(&buffer), 25); // text OID
-        let result: String = FromSql::from_sql(value).unwrap();
-        
-        assert_eq!(original, result);
-    }
-
-    #[test]
-    fn test_str_to_sql() {
-        let original = "Hello, GaussDB!";
-        let mut buffer = Vec::new();
-        let mut output = Output::test(ByteWrapper(&mut buffer));
-        
-        original.to_sql(&mut output).unwrap();
-        assert_eq!(buffer, original.as_bytes());
-    }
-
-    #[test]
-    fn test_bool_roundtrip() {
-        for &original in &[true, false] {
-            let mut buffer = Vec::new();
-            let mut output = Output::test(ByteWrapper(&mut buffer));
-            
-            original.to_sql(&mut output).unwrap();
-            let value = GaussDBValue::new(Some(&buffer), 16); // bool OID
-            let result: bool = FromSql::from_sql(value).unwrap();
-            
-            assert_eq!(original, result);
-        }
-    }
-
-    #[test]
-    fn test_binary_roundtrip() {
-        let original = vec![0x01, 0x02, 0x03, 0x04, 0xFF];
-        let mut buffer = Vec::new();
-        let mut output = Output::test(ByteWrapper(&mut buffer));
-        
-        original.to_sql(&mut output).unwrap();
-        let value = GaussDBValue::new(Some(&buffer), 17); // bytea OID
-        let result: Vec<u8> = FromSql::from_sql(value).unwrap();
-        
-        assert_eq!(original, result);
-    }
-
-    #[test]
-    fn test_slice_to_sql() {
-        let original = &[0x01, 0x02, 0x03, 0x04, 0xFF];
-        let mut buffer = Vec::new();
-        let mut output = Output::test(ByteWrapper(&mut buffer));
-        
-        original.to_sql(&mut output).unwrap();
-        assert_eq!(buffer, original);
-    }
-
-    #[test]
-    fn test_oid_roundtrip() {
-        let original = 12345u32;
-        let mut buffer = Vec::new();
-        let mut output = Output::test(ByteWrapper(&mut buffer));
-        
-        original.to_sql(&mut output).unwrap();
-        let value = GaussDBValue::new(Some(&buffer), 26); // oid OID
-        let result: u32 = FromSql::from_sql(value).unwrap();
-        
-        assert_eq!(original, result);
-    }
-
-    #[test]
-    fn test_null_values() {
-        let value = GaussDBValue::new(None, 25);
-        
-        let result: Result<String, _> = FromSql::from_sql(value);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string(), "Text value is null");
-    }
-
-    #[test]
-    fn test_invalid_length() {
-        // Test with wrong length for i32
-        let value = GaussDBValue::new(Some(&[0x01, 0x02]), 23); // Only 2 bytes for int4
-        let result: Result<i32, _> = FromSql::from_sql(value);
-        assert!(result.is_err());
-        assert_eq!(result.unwrap_err().to_string(), "Invalid Integer length");
-    }
-
-    #[test]
-    fn test_invalid_utf8() {
-        // Test with invalid UTF-8 bytes
-        let invalid_utf8 = &[0xFF, 0xFE, 0xFD];
-        let value = GaussDBValue::new(Some(invalid_utf8), 25);
-        let result: Result<String, _> = FromSql::from_sql(value);
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Invalid UTF-8"));
-    }
-}

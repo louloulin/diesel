@@ -11,6 +11,7 @@ Diesel-GaussDB provides a fully-featured GaussDB database backend for Diesel, en
 - **Complete Diesel Backend**: Full implementation of all Diesel backend traits
 - **PostgreSQL-Compatible SQL**: Generates PostgreSQL-compatible SQL optimized for GaussDB
 - **Type Safety**: Comprehensive type mapping between Rust and GaussDB types
+- **Complex Types**: Support for PostgreSQL-compatible arrays and planned range types
 - **Real Database Connectivity**: Uses the `gaussdb` crate for authentic GaussDB connections
 - **Feature-based Compilation**: Optional real database integration with mock fallback
 - **Query Builder**: Custom query builder with proper identifier escaping and parameter binding
@@ -94,6 +95,31 @@ The GaussDB backend supports comprehensive type mapping:
 | `String` | `TEXT` | `Text` |
 | `Vec<u8>` | `BYTEA` | `Binary` |
 | `bool` | `BOOLEAN` | `Bool` |
+| `Vec<T>` | `T[]` | `Array<T>` |
+
+### Complex Types
+
+The backend supports PostgreSQL-compatible complex types:
+
+- **Arrays**: One-dimensional arrays of basic types (`Vec<T>` ↔ `Array<T>`)
+- **Range Types**: Planned for future implementation
+
+```rust
+// Array usage example
+diesel::table! {
+    posts (id) {
+        id -> Integer,
+        tags -> Array<Text>,
+        scores -> Array<Integer>,
+    }
+}
+
+let post_tags: Vec<String> = posts::table
+    .select(posts::tags)
+    .first(&mut connection)?;
+```
+
+For detailed information about complex types, see [COMPLEX_TYPES.md](COMPLEX_TYPES.md).
 
 ## Features
 
@@ -122,11 +148,15 @@ cargo run --example basic_usage --features gaussdb
 - [x] Complete Diesel Backend implementation
 - [x] PostgreSQL-compatible query builder
 - [x] Comprehensive type system
+- [x] Complex types support (Arrays)
 - [x] Connection management
 - [x] Feature-based compilation
 - [x] Mock implementation for testing
 - [x] Real GaussDB connectivity
 - [x] Comprehensive test suite
+- [ ] Range types support (planned)
+- [ ] Multi-dimensional arrays (planned)
+- [ ] Array serialization (ToSql) (planned)
 
 ## Contributing
 
