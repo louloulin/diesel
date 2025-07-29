@@ -65,12 +65,12 @@ diesel-gaussdb/
 #### 1.1 项目初始化
 - [x] 创建 Cargo 项目结构
 - [x] 配置依赖项 (diesel, gaussdb-rust, 等)
-- [ ] 设置 CI/CD 配置
+- [x] 设置 CI/CD 配置
 - [x] 编写基础文档
 
 #### 1.2 开发环境设置
-- [ ] Docker 环境配置 (GaussDB/OpenGauss)
-- [ ] 测试数据库初始化脚本
+- [x] Docker 环境配置 (GaussDB/OpenGauss)
+- [x] 测试数据库初始化脚本
 - [x] 开发工具配置
 
 ### 阶段 2: 核心 Backend 实现 (3-4 天) ✅ **已完成**

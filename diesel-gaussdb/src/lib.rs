@@ -39,6 +39,7 @@ pub mod types;
 pub mod gaussdb_extensions;
 pub mod expression;
 pub mod serialize;
+pub mod value;
 
 // Re-export core types
 pub use backend::GaussDB;

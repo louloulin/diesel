@@ -1,12 +1,22 @@
 //! Connection implementation for GaussDB
 //!
 //! This module provides the connection interface for GaussDB databases.
-//! Uses PostgreSQL protocol for GaussDB compatibility.
+//! Uses the real gaussdb crate for authentic GaussDB connectivity.
 
-use diesel::connection::{Connection, ConnectionSealed, SimpleConnection, AnsiTransactionManager, Instrumentation};
+use diesel::connection::statement_cache::StatementCache;
+use diesel::connection::{
+    AnsiTransactionManager, Connection, ConnectionSealed, Instrumentation, SimpleConnection,
+};
 use diesel::result::{ConnectionResult, QueryResult, Error as DieselError};
-use crate::backend::GaussDB;
 use std::fmt;
+
+use crate::backend::GaussDB;
+use crate::query_builder::GaussDBQueryBuilder;
+
+#[cfg(feature = "gaussdb")]
+use gaussdb::{Client, Config, NoTls, Error as GaussDBError};
+#[cfg(feature = "gaussdb")]
+
 
 mod raw;
 mod stmt;
@@ -17,37 +27,50 @@ pub use self::stmt::Statement;
 /// A connection to a GaussDB database
 ///
 /// This connection type provides access to GaussDB databases using
-/// PostgreSQL-compatible protocols with GaussDB-specific authentication.
+/// the real gaussdb crate for authentic connectivity.
 pub struct GaussDBConnection {
+    #[cfg(feature = "gaussdb")]
+    raw_connection: Client,
+    #[cfg(not(feature = "gaussdb"))]
     raw_connection: RawConnection,
     transaction_manager: AnsiTransactionManager,
     instrumentation: Box<dyn Instrumentation>,
     /// Statement cache for prepared statements
-    statement_cache: std::collections::HashMap<String, Statement>,
+    statement_cache: StatementCache<GaussDB, Statement>,
 }
 
 impl fmt::Debug for GaussDBConnection {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("GaussDBConnection")
-            .field("raw_connection", &self.raw_connection)
-            .field("transaction_manager", &"AnsiTransactionManager")
-            .field("instrumentation", &"Box<dyn Instrumentation>")
-            .finish()
+            .field("transaction_manager", &self.transaction_manager)
+            .field("statement_cache", &"[StatementCache]")
+            .finish_non_exhaustive()
     }
 }
+
+
 
 impl ConnectionSealed for GaussDBConnection {}
 
 impl SimpleConnection for GaussDBConnection {
     fn batch_execute(&mut self, query: &str) -> QueryResult<()> {
-        // For now, just execute and ignore the result count
-        // In a real implementation, this would properly handle the connection
-        self.raw_connection.execute(query)
-            .map(|_| ())
-            .map_err(|_| DieselError::DatabaseError(
-                diesel::result::DatabaseErrorKind::UnableToSendCommand,
-                Box::new("Connection error".to_string())
-            ))
+        #[cfg(feature = "gaussdb")]
+        {
+            self.raw_connection.batch_execute(query)
+                .map_err(|e| DieselError::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UnableToSendCommand,
+                    Box::new(format!("GaussDB error: {}", e))
+                ))
+        }
+        #[cfg(not(feature = "gaussdb"))]
+        {
+            self.raw_connection.execute(query)
+                .map(|_| ())
+                .map_err(|_| DieselError::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UnableToSendCommand,
+                    Box::new("Connection error".to_string())
+                ))
+        }
     }
 }
 
@@ -56,23 +79,60 @@ impl Connection for GaussDBConnection {
     type TransactionManager = diesel::connection::AnsiTransactionManager;
 
     fn establish(database_url: &str) -> ConnectionResult<Self> {
-        let raw_connection = RawConnection::establish(database_url)?;
-        let transaction_manager = AnsiTransactionManager::default();
+        #[cfg(feature = "gaussdb")]
+        {
+            use gaussdb::{Config, NoTls};
+            use std::str::FromStr;
 
-        // Create a simple instrumentation implementation
-        struct SimpleInstrumentation;
-        impl Instrumentation for SimpleInstrumentation {
-            fn on_connection_event(&mut self, _event: diesel::connection::InstrumentationEvent<'_>) {}
+            let config = Config::from_str(database_url)
+                .map_err(|e| diesel::ConnectionError::CouldntSetupConfiguration(DieselError::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UnableToSendCommand,
+                    Box::new(format!("Invalid database URL: {}", e))
+                )))?;
+
+            let client = config.connect(NoTls)
+                .map_err(|e| diesel::ConnectionError::CouldntSetupConfiguration(DieselError::DatabaseError(
+                    diesel::result::DatabaseErrorKind::UnableToSendCommand,
+                    Box::new(format!("Failed to connect to GaussDB: {}", e))
+                )))?;
+
+            let transaction_manager = AnsiTransactionManager::default();
+
+            // Create a simple instrumentation implementation
+            struct SimpleInstrumentation;
+            impl Instrumentation for SimpleInstrumentation {
+                fn on_connection_event(&mut self, _event: diesel::connection::InstrumentationEvent<'_>) {}
+            }
+
+            let instrumentation = Box::new(SimpleInstrumentation);
+
+            Ok(GaussDBConnection {
+                raw_connection: client,
+                transaction_manager,
+                instrumentation,
+                statement_cache: StatementCache::new(),
+            })
         }
+        #[cfg(not(feature = "gaussdb"))]
+        {
+            let raw_connection = RawConnection::establish(database_url)?;
+            let transaction_manager = AnsiTransactionManager::default();
 
-        let instrumentation = Box::new(SimpleInstrumentation);
+            // Create a simple instrumentation implementation
+            struct SimpleInstrumentation;
+            impl Instrumentation for SimpleInstrumentation {
+                fn on_connection_event(&mut self, _event: diesel::connection::InstrumentationEvent<'_>) {}
+            }
 
-        Ok(GaussDBConnection {
-            raw_connection,
-            transaction_manager,
-            instrumentation,
-            statement_cache: std::collections::HashMap::new(),
-        })
+            let instrumentation = Box::new(SimpleInstrumentation);
+
+            Ok(GaussDBConnection {
+                raw_connection,
+                transaction_manager,
+                instrumentation,
+                statement_cache: StatementCache::new(),
+            })
+        }
     }
 
     fn execute_returning_count<T>(&mut self, _source: &T) -> QueryResult<usize>

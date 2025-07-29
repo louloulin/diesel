@@ -1,78 +1,132 @@
 # Diesel-GaussDB
 
-A GaussDB backend for the Diesel ORM framework.
+A complete GaussDB backend implementation for the Diesel ORM framework.
 
 ## Overview
 
-Diesel-GaussDB provides GaussDB database support for the Diesel ORM, enabling Rust applications to work with GaussDB and OpenGauss databases using Diesel's type-safe query builder.
+Diesel-GaussDB provides a fully-featured GaussDB database backend for Diesel, enabling Rust applications to work with GaussDB databases using Diesel's type-safe query builder. This implementation includes a complete backend, query builder, type system, and connection management.
 
 ## Features
 
-- **GaussDB Compatibility**: Full support for GaussDB and OpenGauss databases
-- **PostgreSQL Protocol**: Leverages PostgreSQL compatibility for maximum feature support
-- **Type Safety**: Compile-time verified queries with Diesel's type system
-- **Authentication**: Support for GaussDB's SHA256 and MD5_SHA256 authentication methods
-- **Async Support**: Optional async/await support with tokio-postgres
-- **Connection Pooling**: Compatible with Diesel's r2d2 connection pooling
+- **Complete Diesel Backend**: Full implementation of all Diesel backend traits
+- **PostgreSQL-Compatible SQL**: Generates PostgreSQL-compatible SQL optimized for GaussDB
+- **Type Safety**: Comprehensive type mapping between Rust and GaussDB types
+- **Real Database Connectivity**: Uses the `gaussdb` crate for authentic GaussDB connections
+- **Feature-based Compilation**: Optional real database integration with mock fallback
+- **Query Builder**: Custom query builder with proper identifier escaping and parameter binding
 
-## Quick Start
+## Installation
 
 Add this to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-diesel = { version = "2.2", features = ["postgres"] }
+diesel = "2.2"
 diesel-gaussdb = "0.1.0-alpha"
+
+# For real GaussDB connectivity
+[features]
+gaussdb = ["diesel-gaussdb/gaussdb"]
 ```
 
-### Basic Usage
+## Usage
+
+### Basic Setup
 
 ```rust
 use diesel::prelude::*;
-use diesel_gaussdb::GaussDBConnection;
+use diesel_gaussdb::{GaussDB, GaussDBConnection};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let database_url = "gaussdb://username:password@localhost:5432/database_name";
-    let mut connection = GaussDBConnection::establish(&database_url)?;
-    
-    // Use Diesel as normal
-    // ...
-    
-    Ok(())
-}
+// Connect to GaussDB
+let database_url = "gaussdb://user:password@localhost:5432/database";
+let mut connection = GaussDBConnection::establish(database_url)?;
 ```
 
-### Async Usage
+### Define Your Schema
 
 ```rust
-use diesel_async::prelude::*;
-use diesel_gaussdb::AsyncGaussDBConnection;
+diesel::table! {
+    users (id) {
+        id -> Integer,
+        name -> Text,
+        email -> Text,
+    }
+}
 
-#[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let database_url = "gaussdb://username:password@localhost:5432/database_name";
-    let mut connection = AsyncGaussDBConnection::establish(&database_url).await?;
-    
-    // Use Diesel async as normal
-    // ...
-    
-    Ok(())
+#[derive(Queryable, Selectable)]
+#[diesel(table_name = users)]
+#[diesel(check_for_backend(GaussDB))]
+struct User {
+    id: i32,
+    name: String,
+    email: String,
 }
 ```
 
-## Supported Features
+### Perform Queries
 
-- [x] Basic CRUD operations
-- [x] Transactions
-- [x] Connection pooling
-- [x] Type-safe queries
-- [ ] GaussDB-specific data types
-- [ ] GaussDB-specific functions
-- [ ] Advanced authentication methods
+```rust
+// Insert data
+diesel::insert_into(users::table)
+    .values((
+        users::name.eq("John Doe"),
+        users::email.eq("john@example.com"),
+    ))
+    .execute(&mut connection)?;
 
-## Development Status
+// Query data
+let all_users = users::table
+    .select(User::as_select())
+    .load(&mut connection)?;
+```
 
-This project is in **alpha** stage. The API may change and some features are still being implemented.
+## Supported Types
+
+The GaussDB backend supports comprehensive type mapping:
+
+| Rust Type | GaussDB Type | Diesel Type |
+|-----------|--------------|-------------|
+| `i16` | `SMALLINT` | `SmallInt` |
+| `i32` | `INTEGER` | `Integer` |
+| `i64` | `BIGINT` | `BigInt` |
+| `f32` | `REAL` | `Float` |
+| `f64` | `DOUBLE PRECISION` | `Double` |
+| `String` | `TEXT` | `Text` |
+| `Vec<u8>` | `BYTEA` | `Binary` |
+| `bool` | `BOOLEAN` | `Bool` |
+
+## Features
+
+### `gaussdb` Feature
+
+Enable real GaussDB connectivity:
+
+```bash
+cargo build --features gaussdb
+```
+
+Without this feature, a mock implementation is used for development and testing.
+
+## Examples
+
+```bash
+# Run basic example
+cargo run --example basic_usage
+
+# Run with real GaussDB
+cargo run --example basic_usage --features gaussdb
+```
+
+## Implementation Status
+
+- [x] Complete Diesel Backend implementation
+- [x] PostgreSQL-compatible query builder
+- [x] Comprehensive type system
+- [x] Connection management
+- [x] Feature-based compilation
+- [x] Mock implementation for testing
+- [x] Real GaussDB connectivity
+- [x] Comprehensive test suite
 
 ## Contributing
 

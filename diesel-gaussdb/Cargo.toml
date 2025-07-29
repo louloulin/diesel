@@ -15,8 +15,10 @@ edition.workspace = true
 
 [dependencies]
 diesel = { path = "../diesel", default-features = false, features = ["postgres_backend", "i-implement-a-third-party-backend-and-opt-into-breaking-changes"] }
-# Note: Using postgres driver as base since GaussDB is PostgreSQL compatible
-# We'll switch to gaussdb-rust when implementing actual connection
+# Using real gaussdb crate for GaussDB connectivity
+gaussdb = { version = "0.1.0", optional = true }
+tokio-gaussdb = { version = "0.1.0", optional = true }
+# Fallback to postgres for compatibility testing
 postgres = { version = "0.19", optional = true }
 tokio-postgres = { version = "0.7", optional = true }
 url = "2.0"
@@ -28,6 +30,7 @@ uuid = { version = "1.0", optional = true }
 bitflags = "2.0"
 byteorder = "1.0"
 itoa = "1.0"
+fallible-iterator = "0.2"
 
 [dev-dependencies]
 dotenvy = "0.15"
@@ -35,11 +38,13 @@ tempfile = "3.0"
 tokio = { version = "1.0", features = ["full"] }
 
 [features]
-default = ["with-deprecated"]
+default = ["with-deprecated", "gaussdb"]
 gaussdb_backend = []
+gaussdb = ["dep:gaussdb"]
+tokio-gaussdb = ["dep:tokio-gaussdb", "tokio"]
 postgres = ["dep:postgres"]
 tokio-postgres = ["dep:tokio-postgres", "tokio"]
-async = ["tokio-postgres"]
+async = ["tokio-gaussdb"]
 chrono = ["dep:chrono", "diesel/chrono"]
 uuid = ["dep:uuid", "diesel/uuid"]
 serde_json = ["serde", "diesel/serde_json"]
