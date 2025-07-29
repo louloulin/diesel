@@ -50,9 +50,15 @@ pub mod functions {
     //! including date/time functions, string functions, and mathematical functions.
 
     pub mod date_and_time;
+    pub mod string;
+    pub mod math;
 
     /// Re-export date and time functions
     pub use self::date_and_time::*;
+    /// Re-export string functions
+    pub use self::string::*;
+    /// Re-export math functions
+    pub use self::math::*;
 
     /// Placeholder for other functions
     pub fn functions_placeholder() {
@@ -74,6 +80,12 @@ pub mod operators {
 pub mod dsl {
     pub use super::functions::date_and_time::{
         current_date, current_time, current_timestamp, date_part, extract, now,
+    };
+    pub use super::functions::string::{
+        length, lower, substring, trim, upper,
+    };
+    pub use super::functions::math::{
+        abs, ceil, floor, round, sqrt,
     };
 
     /// Placeholder for DSL functions

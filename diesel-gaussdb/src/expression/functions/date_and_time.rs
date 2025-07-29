@@ -24,7 +24,7 @@ use diesel::sql_types::{Date, Nullable, Time, Timestamp};
 /// ```rust
 /// # use diesel_gaussdb::expression::functions::now;
 /// // SELECT NOW()
-/// let current_time = now();
+/// let current_time = now;
 /// ```
 #[allow(non_camel_case_types)]
 #[derive(Debug, Copy, Clone, QueryId, ValidGrouping)]
@@ -57,7 +57,7 @@ impl<QS> AppearsOnTable<QS> for now {}
 /// ```rust
 /// # use diesel_gaussdb::expression::functions::current_timestamp;
 /// // SELECT CURRENT_TIMESTAMP
-/// let current_time = current_timestamp();
+/// let current_time = current_timestamp;
 /// ```
 #[allow(non_camel_case_types)]
 #[derive(Debug, Copy, Clone, QueryId, ValidGrouping)]
@@ -89,7 +89,7 @@ impl<QS> AppearsOnTable<QS> for current_timestamp {}
 /// ```rust
 /// # use diesel_gaussdb::expression::functions::current_date;
 /// // SELECT CURRENT_DATE
-/// let today = current_date();
+/// let today = current_date;
 /// ```
 #[allow(non_camel_case_types)]
 #[derive(Debug, Copy, Clone, QueryId, ValidGrouping)]
@@ -121,7 +121,7 @@ impl<QS> AppearsOnTable<QS> for current_date {}
 /// ```rust
 /// # use diesel_gaussdb::expression::functions::current_time;
 /// // SELECT CURRENT_TIME
-/// let now_time = current_time();
+/// let now_time = current_time;
 /// ```
 #[allow(non_camel_case_types)]
 #[derive(Debug, Copy, Clone, QueryId, ValidGrouping)]
